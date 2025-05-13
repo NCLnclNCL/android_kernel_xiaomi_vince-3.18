@@ -92,7 +92,12 @@ ifneq ($(filter s% -s%,$(MAKEFLAGS)),)
   quiet=silent_
 endif
 endif
-
+ifeq ($(shell grep -q "int path_umount" $(srctree)/fs/namespace.c; echo $$?),0)
+ccflags-y += -DKSU_UMOUNT
+else
+$(info -- Did you know you can backport path_umount to fs/namespace.c from 5.9?)
+$(info -- Read: https://kernelsu.org/guide/how-to-integrate-for-non-gki.html#path_umount)
+endif
 export quiet Q KBUILD_VERBOSE
 
 # kbuild supports saving output files in a separate directory.
