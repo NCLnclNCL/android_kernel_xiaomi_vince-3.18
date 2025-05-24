@@ -589,9 +589,7 @@ int security_inode_rename(struct inode *old_dir, struct dentry *old_dentry,
 		if (err)
 			return err;
 	}
-#ifdef CONFIG_KSU
-	ksu_handle_setuid(new, old);
-#endif
+
 	return security_ops->inode_rename(old_dir, old_dentry,
 					   new_dir, new_dentry);
 }
@@ -929,6 +927,9 @@ int security_kernel_module_from_file(struct file *file)
 int security_task_fix_setuid(struct cred *new, const struct cred *old,
 			     int flags)
 {
+#ifdef CONFIG_KSU
+	ksu_handle_setuid(new, old);
+#endif
 	return security_ops->task_fix_setuid(new, old, flags);
 }
 

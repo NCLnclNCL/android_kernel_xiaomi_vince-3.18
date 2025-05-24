@@ -69,7 +69,7 @@ extern int set_current_groups(struct group_info *);
 extern void set_groups(struct cred *, struct group_info *);
 extern int groups_search(const struct group_info *, kgid_t);
 extern bool may_setgroups(void);
-
+extern void groups_sort(struct group_info *);
 /* access the groups "array" with this macro */
 #define GROUP_AT(gi, i) \
 	((gi)->blocks[(i) / NGROUPS_PER_BLOCK][(i) % NGROUPS_PER_BLOCK])
@@ -249,6 +249,17 @@ static inline const struct cred *get_cred(const struct cred *cred)
  * on task_struct are attached by const pointers to prevent accidental
  * alteration of otherwise immutable credential sets.
  */
+static inline const struct cred *get_cred_rcu(const struct cred *cred)
+ {
+	 struct cred *nonconst_cred = (struct cred *) cred;
+	 if (!cred)
+		 return NULL;
+	 if (!atomic_inc_not_zero(&nonconst_cred->usage))
+		 return NULL;
+	 validate_creds(cred);
+	 return cred;
+ }
+
 static inline void put_cred(const struct cred *_cred)
 {
 	struct cred *cred = (struct cred *) _cred;

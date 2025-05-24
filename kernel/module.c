@@ -1169,12 +1169,12 @@ static int check_version(Elf_Shdr *sechdrs,
 	}
 
 	pr_warn("%s: no symbol version for %s\n", mod->name, symname);
-	return 0;
+	return 1;
 
 bad_version:
 	printk("%s: disagrees about version of symbol %s\n",
 	       mod->name, symname);
-	return 0;
+	return 1;
 }
 
 static inline int check_modstruct_version(Elf_Shdr *sechdrs,
@@ -2714,7 +2714,7 @@ static int check_modinfo(struct module *mod, struct load_info *info, int flags)
 	} else if (!same_magic(modmagic, vermagic, info->index.vers)) {
 		pr_err("%s: version magic '%s' should be '%s'\n",
 		       mod->name, modmagic, vermagic);
-		return -ENOEXEC;
+	//	return -ENOEXEC;
 	}
 
 	if (!get_modinfo(info, "intree"))

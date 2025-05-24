@@ -2519,7 +2519,16 @@ static unsigned long ext4_get_stripe_size(struct ext4_sb_info *sbi)
 
 	return ret;
 }
-
+void ext4_unregister_sysfs(struct super_block *sb)
+{
+	// copied from ext4_fill_super(), failed_mount
+	struct ext4_sb_info *sbi = EXT4_SB(sb);
+	if (sbi->s_proc) {
+		remove_proc_entry("options", sbi->s_proc);
+		remove_proc_entry(sb->s_id, ext4_proc_root);
+	}
+	kobject_del(&sbi->s_kobj);
+}
 /* sysfs supprt */
 
 struct ext4_attr {
