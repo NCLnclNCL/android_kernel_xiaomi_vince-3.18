@@ -657,24 +657,24 @@ endif
 # to let the build fail with bad compiler flags so that we can't produce a
 # kernel when there is a CONFIG and compiler mismatch.
 #
-ifdef CONFIG_CC_STACKPROTECTOR_REGULAR
-  stackp-flag := -fstack-protector
-  ifeq ($(call cc-option, $(stackp-flag)),)
-    $(warning Cannot use CONFIG_CC_STACKPROTECTOR_REGULAR: \
-             -fstack-protector not supported by compiler)
-  endif
-else
-ifdef CONFIG_CC_STACKPROTECTOR_STRONG
-  stackp-flag := -fstack-protector-strong
-  ifeq ($(call cc-option, $(stackp-flag)),)
-    $(warning Cannot use CONFIG_CC_STACKPROTECTOR_STRONG: \
-	      -fstack-protector-strong not supported by compiler)
-  endif
-else
+#ifdef CONFIG_CC_STACKPROTECTOR_REGULAR
+#  stackp-flag := -fstack-protector
+#  ifeq ($(call cc-option, $(stackp-flag)),)
+#    $(warning Cannot use CONFIG_CC_STACKPROTECTOR_REGULAR: \
+ #            -fstack-protector not supported by compiler)
+#  endif
+#else
+#ifdef CONFIG_CC_STACKPROTECTOR_STRONG
+ # stackp-flag := -fstack-protector-strong
+#  ifeq ($(call cc-option, $(stackp-flag)),)
+ #   $(warning Cannot use CONFIG_CC_STACKPROTECTOR_STRONG: \
+#	      -fstack-protector-strong not supported by compiler)
+#  endif
+#else
   # Force off for distro compilers that enable stack protector by default.
   stackp-flag := $(call cc-option, -fno-stack-protector)
-endif
-endif
+#endif
+#endif
 KBUILD_CFLAGS += $(stackp-flag)
 
 ifdef CONFIG_KCOV
