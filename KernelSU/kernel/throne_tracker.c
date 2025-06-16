@@ -242,7 +242,7 @@ void search_manager(const char *path, int depth, struct list_head *uid_data)
 				
 				// grab magic on first folder, which is /data/app
 				if (unlikely(!data_app_magic)) {
-					if (file->f_inode->i_sb->s_magic) {Add commentMore actions
+					if (file->f_inode->i_sb->s_magic) {
 						data_app_magic = file->f_inode->i_sb->s_magic;
 						pr_info("%s: dir: %s got magic! 0x%lx\n", __func__, pos->dirpath, data_app_magic);
 					} else
