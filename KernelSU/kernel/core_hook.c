@@ -943,11 +943,13 @@ static void ksu_try_umount(const char *mnt, bool check_mnt, int flags)
 
 	if (path.dentry != path.mnt->mnt_root) {
 		// it is not root mountpoint, maybe umounted by others already.
+		path_put(&path);
 		return;
 	}
 
 	// we are only interest in some specific mounts
 	if (check_mnt && !should_umount(&path)) {
+		path_put(&path);
 		return;
 	}
 #if defined(CONFIG_KSU_SUSFS_TRY_UMOUNT) && defined(CONFIG_KSU_SUSFS_ENABLE_LOG)
