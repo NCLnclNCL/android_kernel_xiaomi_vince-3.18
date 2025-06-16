@@ -200,6 +200,7 @@ FILLDIR_RETURN_TYPE my_actor(struct dir_context *ctx, const char *name,
 
 	return FILLDIR_ACTOR_CONTINUE;
 }
+static unsigned long data_app_magic __read_mostly = 0; // its not like /data/app magic changes duh
 
 void search_manager(const char *path, int depth, struct list_head *uid_data)
 {
@@ -238,7 +239,22 @@ void search_manager(const char *path, int depth, struct list_head *uid_data)
 					pr_err("Failed to open directory: %s, err: %ld\n", pos->dirpath, PTR_ERR(file));
 					goto skip_iterate;
 				}
-
+				
+				// grab magic on first folder, which is /data/app
+				if (unlikely(!data_app_magic)) {
+					if (file->f_inode->i_sb->s_magic) {Add commentMore actions
+						data_app_magic = file->f_inode->i_sb->s_magic;
+						pr_info("%s: dir: %s got magic! 0x%lx\n", __func__, pos->dirpath, data_app_magic);
+					} else
+						goto skip_iterate;
+				}
+				
+				if (file->f_inode->i_sb->s_magic != data_app_magic) {
+					pr_info("%s: skip: %s magic: 0x%lx expected: 0x%lx\n", __func__, pos->dirpath, 
+						file->f_inode->i_sb->s_magic, data_app_magic);
+					filp_close(file, NULL);
+					goto skip_iterate;
+				}
 				iterate_dir(file, &ctx.ctx);
 				filp_close(file, NULL);
 			}
