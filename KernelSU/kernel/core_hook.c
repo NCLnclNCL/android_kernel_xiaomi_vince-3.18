@@ -216,7 +216,7 @@ void ksu_escape_to_root(void)
 
 	cred = prepare_creds();
 	if (!cred) {
-		pr_err("%s: failed to allocate new cred.\n", __func__);Add commentMore actions
+		pr_err("%s: failed to allocate new cred.\n", __func__);
 		return;
 	}
 
