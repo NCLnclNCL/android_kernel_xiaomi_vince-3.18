@@ -1,4 +1,4 @@
-#! /usr/bin/env python2
+#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # Copyright (c) 2011-2015, The Linux Foundation. All rights reserved.
