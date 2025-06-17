@@ -19,8 +19,8 @@
 		status = "okay";
 		pm8953_s1: regulator-s1 {
 			regulator-min-microvolt = <680000>;
-			regulator-max-microvolt = <9606000>;
-			qcom,init-voltage = <960600>;
+			regulator-max-microvolt = <9656000>;
+			qcom,init-voltage = <965600>;
 			status = "okay";
 		};
 	};
@@ -288,9 +288,9 @@
 	rpm-regulator-ldoa22 {
 		status = "okay";
 		pm8953_l22: regulator-l22 {
-			regulator-min-microvolt = <2100000>;
-			regulator-max-microvolt = <2600000>;
-			qcom,init-voltage = <2600000>;
+			regulator-min-microvolt = <2150000>;
+			regulator-max-microvolt = <2700000>;
+			qcom,init-voltage = <2700000>;
 			status = "okay";
 		};
 	};
@@ -449,20 +449,20 @@
 				/*	<550000  625000 695000 700000 755000
 					 825000 900000 900000 900000>, */
 
-					<530000  600000 670000 675000 730000
-					 800000 875000 875000 875000>,
+					<530000  605000 675000 680000 735000
+					 805000 880000 880000 880000>,
 					 
 					/* Speed bin 2 */
-					<530000  600000 670000 675000 730000
-					 800000 875000>,
+					<530000  605000 675000 680000 735000
+					 805000 880000>,
 
 					/* Speed bin 6 */
-					<530000  600000 670000 675000 730000
-					 800000 875000>,
+					<530000  605000 675000 680000 735000
+					 805000 880000>,
 
 					/* Speed bin 7 */
-					<530000  600000 670000 675000 730000
-					 800000 875000 875000 875000>;
+					<530000  605000 675000 680000 735000
+					 805000 880000 880000 880000>;
 
 				qcom,cpr-voltage-floor =
 					/* Speed bin 0 */
