@@ -6,13 +6,7 @@
 #include <linux/kallsyms.h>
 #include <linux/kernel.h>
 #include <linux/kprobes.h>
-#ifndef KSU_HAS_PATH_UMOUNT
-#include <linux/syscalls.h> // sys_umount
-#endif
-#ifdef CONFIG_KSU_LSM_SECURITY_HOOKS
 #include <linux/lsm_hooks.h>
-#endif
-
 #include <linux/mm.h>
 #include <linux/nsproxy.h>
 #include <linux/path.h>
@@ -29,6 +23,9 @@
 
 #include <linux/fs.h>
 #include <linux/namei.h>
+#ifndef KSU_HAS_PATH_UMOUNT
+#include <linux/syscalls.h> // sys_umount (<4.17) & ksys_umount (4.17+)
+#endif
 
 #ifdef MODULE
 #include <linux/list.h>
@@ -53,14 +50,13 @@
 #include "throne_tracker.h"
 #include "throne_tracker.h"
 #include "kernel_compat.h"
-
 #ifdef CONFIG_KSU_SUSFS
 bool susfs_is_allow_su(void)
 {
 	if (ksu_is_manager()) {
 		// we are manager, allow!
-		return true;
-	}
+		return true;	
+}
 	return ksu_is_allow_uid(current_uid().val);
 }
 
@@ -116,11 +112,11 @@ static inline void susfs_on_post_fs_data(void) {
 	pr_info("susfs_is_auto_add_try_umount_for_bind_mount_enabled: %d\n", susfs_is_auto_add_try_umount_for_bind_mount_enabled);
 #endif // #ifdef CONFIG_KSU_SUSFS_AUTO_ADD_TRY_UMOUNT_FOR_BIND_MOUNT
 }
+
 #endif // #ifdef CONFIG_KSU_SUSFS
 
 static bool ksu_module_mounted = false;
 
-//extern int handle_sepolicy(unsigned long arg3, void __user *arg4);
 extern int ksu_handle_sepolicy(unsigned long arg3, void __user *arg4);
 
 static bool ksu_su_compat_enabled = true;
@@ -130,7 +126,6 @@ extern void ksu_sucompat_exit();
 static inline bool is_allow_su()
 {
 	if (ksu_is_manager()) {
-	//no need edit
 		// we are manager, allow!
 		return true;
 	}
@@ -188,7 +183,6 @@ static void setup_groups(struct root_profile *profile, struct cred *cred)
 	groups_sort(group_info);
 	set_groups(cred, group_info);
 	put_group_info(group_info);
-
 }
 
 static void disable_seccomp(void)
@@ -213,19 +207,18 @@ void ksu_escape_to_root(void)
 {
 	struct cred *cred;
 
-
 	cred = prepare_creds();
 	if (!cred) {
 		pr_err("%s: failed to allocate new cred.\n", __func__);
 		return;
 	}
 
-
 	if (cred->euid.val == 0) {
 		pr_warn("Already root, don't escape!\n");
 		abort_creds(cred);
 		return;
 	}
+
 	struct root_profile *profile = ksu_get_root_profile(cred->uid.val);
 
 	cred->uid.val = profile->uid;
@@ -255,10 +248,9 @@ void ksu_escape_to_root(void)
 	       sizeof(cred->cap_bset));
 
 	setup_groups(profile, cred);
-	
 
 	commit_creds(cred);
-	
+
 	// Refer to kernel/seccomp.c: seccomp_set_mode_strict
 	// When disabling Seccomp, ensure that current->sighand->siglock is held during the operation.
 	spin_lock_irq(&current->sighand->siglock);
@@ -863,25 +855,7 @@ static bool is_appuid(kuid_t uid)
 	uid_t appid = uid.val % PER_USER_RANGE;
 	return appid >= FIRST_APPLICATION_UID && appid <= LAST_APPLICATION_UID;
 }
-/* 
- * Keep in mind, since kprobes already have pre handler, we must
- * guard it with CONFIG_KSU_KPROBES_HOOK, although it is possible to
- * disable kprobes pre handler, but this is way more simple.
- * However, if you wanna use LSM hooks, feel free to fork.
- */
-#if !defined(KSU_HAS_DEVPTS_HANDLER) && !defined(CONFIG_KSU_KPROBES_HOOK)
-extern int ksu_handle_devpts(struct inode *inode);
-static int ksu_inode_permission(struct inode *inode, int mask)
-{
-	if (unlikely(inode->i_sb && inode->i_sb->s_magic == DEVPTS_SUPER_MAGIC)) {
-#ifdef CONFIG_KSU_DEBUG
-		pr_info("%s: devpts inode accessed with mask: %x\n", __func__, mask);
-#endif
-		ksu_handle_devpts(inode);
-	}
-	return 0;
-}
-#endif
+
 static bool should_umount(struct path *path)
 {
 	if (!path) {
@@ -904,34 +878,33 @@ static bool should_umount(struct path *path)
 	return false;
 #endif
 }
-#ifdef KSU_HAS_PATH_UMOUNT
-static void ksu_umount_mnt(struct path *path, int flags)
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 9, 0) || defined(KSU_HAS_PATH_UMOUNT)
+static void ksu_path_umount(const char *mnt, struct path *path, int flags)
 {
-	int err = path_umount(path, flags);
-	if (err) {
-		pr_err("umount %s failed, err: %d\n",
-			path->dentry->d_iname, err);
-	} else {
-#ifdef CONFIG_KSU_DEBUG
-		pr_info("umount %s success\n",
-			path->dentry->d_iname);
-#endif
-	}
+	int ret = path_umount(path, flags);
+	pr_info("%s: path: %s ret: %d\n", __func__, mnt, ret);
 }
 #else
+// TODO: Search a way to make this works without set_fs functions
 static void ksu_sys_umount(const char *mnt, int flags)
 {
-	const char *kernelpath = mnt;
-	char __user *userpath = (char __user *)kernelpath;
+	char __user *usermnt = (char __user *)mnt;
+	mm_segment_t old_fs;
+	int ret; // although asmlinkage long
 
-	mm_segment_t old_fs = get_fs();
+	old_fs = get_fs();
 	set_fs(KERNEL_DS);
-	long ret = sys_umount(userpath, flags); // cuz asmlinkage long sys##name
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 17, 0)
+	ret = ksys_umount(usermnt, flags);
+#else
+	ret = sys_umount(usermnt, flags); // cuz asmlinkage long sys##name
+#endif
 	set_fs(old_fs);
-	pr_info("%s: path: %s code: %d \n", __func__, userpath, ret);
+	pr_info("%s: path: %s ret: %d\n", __func__, usermnt, ret);
 }
 #endif
-//static void try_umount(const char *mnt, bool check_mnt, int flags)
+
 #ifdef CONFIG_KSU_SUSFS_TRY_UMOUNT
 void ksu_try_umount(const char *mnt, bool check_mnt, int flags, uid_t uid)
 #else
@@ -961,7 +934,7 @@ static void ksu_try_umount(const char *mnt, bool check_mnt, int flags)
 	}
 #endif
 #ifdef KSU_HAS_PATH_UMOUNT
-	ksu_umount_mnt(&path, flags);
+	ksu_path_umount(mnt, &path, flags);
 #else
 	ksu_sys_umount(mnt, flags);
 #endif
@@ -979,17 +952,10 @@ void susfs_try_umount_all(uid_t uid) {
 	//   its dev_name is KSU or not, and it is safe to just umount it if it is really a mountpoint
 	ksu_try_umount("/data/adb/modules", false, MNT_DETACH, uid);
 	/* For both Legacy KSU and Magic Mount KSU */
-	ksu_try_umount("/debug_ramdisk", false, MNT_DETACH, uid);
-//	ksu_try_umount("/sbin", false, MNT_DETACH, uid);
-	
-	// try umount hosts file
-//	ksu_try_umount("/system/etc/hosts", false, MNT_DETACH, uid);
-
-	// try umount lsposed dex2oat bins
-//	ksu_try_umount("/apex/com.android.art/bin/dex2oat64", false, MNT_DETACH, uid);
-//	ksu_try_umount("/apex/com.android.art/bin/dex2oat32", false, MNT_DETACH, uid);
+	ksu_try_umount("/debug_ramdisk", true, MNT_DETACH, uid);
 }
 #endif
+
 int ksu_handle_setuid(struct cred *new, const struct cred *old)
 {
 	// this hook is used for umounting overlayfs for some uid, if there isn't any module mounted, just ignore it!
@@ -1054,7 +1020,6 @@ out_ksu_try_umount:
 	// check old process's selinux context, if it is not zygote, ignore it!
 	// because some su apps may setuid to untrusted_app but they are in global mount namespace
 	// when we umount for such process, that is a disaster!
-	//bool is_zygote_child = is_zygote(old->security);
 	bool is_zygote_child = ksu_is_zygote(old->security);
 #endif
 	if (!is_zygote_child) {
@@ -1062,7 +1027,6 @@ out_ksu_try_umount:
 			current->pid);
 		return 0;
 	}
-	
 #ifdef CONFIG_KSU_DEBUG
 	// umount the target mnt
 	pr_info("handle umount for uid: %d, pid: %d\n", new_uid.val,
@@ -1072,46 +1036,37 @@ out_ksu_try_umount:
 	// susfs come first, and lastly umount by ksu, make sure umount in reversed order
 	susfs_try_umount_all(new_uid.val);
 #else
+
 	// fixme: use `collect_mounts` and `iterate_mount` to iterate all mountpoint and
 	// filter the mountpoint whose target is `/data/adb`
-//	try_umount("/system", true, 0);
-//	try_umount("/vendor", true, 0);
-//	try_umount("/product", true, 0);
-//	try_umount("/system_ext", true, 0);
-	
+	ksu_try_umount("/system", true, 0);
+	ksu_try_umount("/vendor", true, 0);
+	ksu_try_umount("/product", true, 0);
+	ksu_try_umount("/data/adb/modules", false, MNT_DETACH);
+	ksu_try_umount("/system_ext", true, 0);
+
 	// try umount modules path
-//	try_umount("/data/adb/modules", false, MNT_DETACH);
-
-	// try umount ksu temp path
-//	try_umount("/debug_ramdisk", false, MNT_DETACH);
-	//try_umount("/sbin", false, MNT_DETACH);
-ksu_try_umount("/system", true, 0, uid);
-	ksu_try_umount("/system_ext", true, 0, uid);
-	ksu_try_umount("/vendor", true, 0, uid);
-	ksu_try_umount("/product", true, 0, uid);
-	ksu_try_umount("/data/adb/modules", false, MNT_DETACH, uid);
-
-	// try umount ksu temp path
-	ksu_try_umount("/debug_ramdisk", false, MNT_DETACH, uid);
-	ksu_try_umount("/sbin", false, MNT_DETACH, uid);
 	
-	// try umount hosts file
-	ksu_try_umount("/system/etc/hosts", false, MNT_DETACH, uid);
 
-	// try umount lsposed dex2oat bins
-	ksu_try_umount("/apex/com.android.art/bin/dex2oat64", false, MNT_DETACH, uid);
-	ksu_try_umount("/apex/com.android.art/bin/dex2oat32", false, MNT_DETACH, uid);
+	// try umount ksu temp path
+	ksu_try_umount("/debug_ramdisk", false, MNT_DETACH);
+	ksu_try_umount("/sbin", false, MNT_DETACH);
 #endif
+
 	return 0;
 }
 
-
+static int ksu_task_prctl(int option, unsigned long arg2, unsigned long arg3,
+			  unsigned long arg4, unsigned long arg5)
+{
+	ksu_handle_prctl(option, arg2, arg3, arg4, arg5);
+	return -ENOSYS;
+}
 // kernel 4.4 and 4.9
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 10, 0) ||	\
 	defined(CONFIG_IS_HW_HISI) ||	\
 	defined(CONFIG_KSU_ALLOWLIST_WORKAROUND)
-/////////////
- int ksu_key_permission(key_ref_t key_ref, const struct cred *cred,
+static int ksu_key_permission(key_ref_t key_ref, const struct cred *cred,
 			      unsigned perm)
 {
 	if (init_session_keyring != NULL) {
@@ -1126,13 +1081,6 @@ ksu_try_umount("/system", true, 0, uid);
 	return 0;
 }
 #endif
-#ifdef CONFIG_KSU_LSM_SECURITY_HOOKS
-static int ksu_task_prctl(int option, unsigned long arg2, unsigned long arg3,
-			  unsigned long arg4, unsigned long arg5)
-{
-	ksu_handle_prctl(option, arg2, arg3, arg4, arg5);
-	return -ENOSYS;
-}
 static int ksu_inode_rename(struct inode *old_inode, struct dentry *old_dentry,
 			    struct inode *new_inode, struct dentry *new_dentry)
 {
@@ -1146,11 +1094,25 @@ static int ksu_task_fix_setuid(struct cred *new, const struct cred *old,
 }
 
 #ifndef MODULE
+#ifndef KSU_HAS_DEVPTS_HANDLER
+extern int ksu_handle_devpts(struct inode *inode);
+static int ksu_inode_permission(struct inode *inode, int mask)
+{
+	if (unlikely(inode->i_sb && inode->i_sb->s_magic == DEVPTS_SUPER_MAGIC)) {
+#ifdef CONFIG_KSU_DEBUG
+		pr_info("%s: devpts inode accessed with mask: %x\n", __func__, mask);
+#endif
+		ksu_handle_devpts(inode);
+	}
+	return 0;
+}
+#endif
+
 static struct security_hook_list ksu_hooks[] = {
 	LSM_HOOK_INIT(task_prctl, ksu_task_prctl),
 	LSM_HOOK_INIT(inode_rename, ksu_inode_rename),
 	LSM_HOOK_INIT(task_fix_setuid, ksu_task_fix_setuid),
-#if !defined(KSU_HAS_DEVPTS_HANDLER) && !defined(CONFIG_KSU_KPROBES_HOOK)
+#ifndef KSU_HAS_DEVPTS_HANDLER
 	LSM_HOOK_INIT(inode_permission, ksu_inode_permission),
 #endif
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 10, 0) ||	\
@@ -1367,12 +1329,3 @@ void __init ksu_core_init(void)
 void ksu_core_exit(void)
 {
 }
-#else
-void ksu_core_exit(void)
-{
-}
-void __init ksu_core_init(void)
-{
-	pr_info("ksu_core_init: LSM hooks not in use.\n");
-}
-#endif //CONFIG_KSU_LSM_SECURITY_HOOKS

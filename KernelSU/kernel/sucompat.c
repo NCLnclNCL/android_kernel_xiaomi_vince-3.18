@@ -8,14 +8,12 @@
 #include <linux/types.h>
 #include <linux/uaccess.h>
 #include <linux/version.h>
+#include <linux/ptrace.h>
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 11, 0)
 #include <linux/sched/task_stack.h>
 #else
 #include <linux/sched.h>
 #endif
-
-/* current_user_stack_pointer */
-#include <linux/ptrace.h>
 
 #include "objsec.h"
 #include "allowlist.h"
@@ -161,14 +159,12 @@ int ksu_handle_execve_sucompat(int *fd, const char __user **filename_user,
 	if (unlikely(!filename_user))
 		return 0;
 
-	//memset(path, 0, sizeof(path));
-	//ksu_strncpy_from_user_nofault(path, *filename_user, sizeof(path));
-		/*
+	/*
 	 * nofault variant fails silently due to pagefault_disable
 	 * some cpus dont really have that good speculative execution
 	 * access_ok to substitute set_fs, we check if pointer is accessible
 	 */
-#if LINUX_VERSION_CODE < KERNEL_VERSION(5,0,0)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 0, 0)
 	if (!access_ok(VERIFY_READ, *filename_user, sizeof(path)))
 		return 0;
 #else
@@ -267,6 +263,8 @@ static int execve_handler_pre(struct kprobe *p, struct pt_regs *regs)
 					  NULL);
 }
 
+#ifdef MODULE
+static struct kprobe *su_kps[6];
 static int pts_unix98_lookup_pre(struct kprobe *p, struct pt_regs *regs)
 {
 	struct inode *inode;
@@ -279,6 +277,9 @@ static int pts_unix98_lookup_pre(struct kprobe *p, struct pt_regs *regs)
 
 	return ksu_handle_devpts(inode);
 }
+#else
+static struct kprobe *su_kps[5];
+#endif
 
 static struct kprobe *init_kprobe(const char *name,
 				  kprobe_pre_handler_t handler)
@@ -309,8 +310,6 @@ static void destroy_kprobe(struct kprobe **kp_ptr)
 	kfree(kp);
 	*kp_ptr = NULL;
 }
-
-static struct kprobe *su_kps[6];
 #endif
 
 // sucompat: permited process can execute 'su' to gain root access.
@@ -322,7 +321,9 @@ void ksu_sucompat_init()
 	su_kps[2] = init_kprobe(SYS_FACCESSAT_SYMBOL, faccessat_handler_pre);
 	su_kps[3] = init_kprobe(SYS_NEWFSTATAT_SYMBOL, newfstatat_handler_pre);
 	su_kps[4] = init_kprobe(SYS_FSTATAT64_SYMBOL, newfstatat_handler_pre);
+#ifdef MODULE
 	su_kps[5] = init_kprobe("pts_unix98_lookup", pts_unix98_lookup_pre);
+#endif
 #else
 	ksu_sucompat_hook_state = true;
 	pr_info("ksu_sucompat init\n");
@@ -341,5 +342,4 @@ void ksu_sucompat_exit()
 	pr_info("ksu_sucompat exit\n");
 #endif
 }
-
 

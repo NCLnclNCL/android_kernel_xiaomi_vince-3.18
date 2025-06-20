@@ -7,7 +7,6 @@
 #include "ss/policydb.h"
 #include "linux/key.h"
 
-
 /*
  * Adapt to Huawei HISI kernel without affecting other kernels ,
  * Huawei Hisi Kernel EBITMAP Enable or Disable Flag ,
