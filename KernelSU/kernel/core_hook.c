@@ -763,7 +763,7 @@ static void try_umount(const char *mnt, int flags)
 	ksu_sys_umount(mnt, flags);
 	// release ref here! user_path_at increases it
 	// then only cleans for itself
-	path_put(&path);
+	//path_put(&path);
 #endif
 }
 
