@@ -17,7 +17,9 @@
 
 #include "pnode.h"
 #include "internal.h"
-
+#ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
+extern bool susfs_is_current_ksu_domain(void);
+#endif
 static unsigned mounts_poll(struct file *file, poll_table *wait)
 {
 	struct proc_mounts *p = proc_mounts(file->private_data);
@@ -101,7 +103,7 @@ static int show_vfsmnt(struct seq_file *m, struct vfsmount *mnt)
 	struct super_block *sb = mnt_path.dentry->d_sb;
 
 #ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
-	if (unlikely(r->mnt_id >= DEFAULT_SUS_MNT_ID))
+	if (unlikely(r->mnt_id >= DEFAULT_SUS_MNT_ID) && !susfs_is_current_ksu_domain()))
 		return 0;
 #endif
 
@@ -140,7 +142,7 @@ static int show_mountinfo(struct seq_file *m, struct vfsmount *mnt)
 	int err = 0;
 
 #ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
-	if (unlikely(r->mnt_id >= DEFAULT_SUS_MNT_ID))
+	if (unlikely(r->mnt_id >= DEFAULT_SUS_MNT_ID) && !susfs_is_current_ksu_domain()))
 		return 0;
 #endif
 
@@ -206,7 +208,7 @@ static int show_vfsstat(struct seq_file *m, struct vfsmount *mnt)
 	int err = 0;
 
 #ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
-	if (unlikely(r->mnt_id >= DEFAULT_SUS_MNT_ID))
+	if (unlikely(r->mnt_id >= DEFAULT_SUS_MNT_ID) && !susfs_is_current_ksu_domain()))
 		return 0;
 #endif
 
