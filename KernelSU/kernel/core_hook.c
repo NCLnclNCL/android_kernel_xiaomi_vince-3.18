@@ -1058,43 +1058,6 @@ out_ksu_try_umount:
 
 	return 0;
 }
-static int ksu_mount_monitor(const char *dev_name, const char *dirname, const char *type)
-{
-
-	char *device_name_copy = kstrdup(dev_name, GFP_KERNEL);
-	char *fstype_copy = kstrdup(type, GFP_KERNEL);
-	char *dirname_copy = kstrdup(dirname, GFP_KERNEL);
-	const char *string_fstype = fstype_copy ? fstype_copy : "(null)";
-	const char *string_devname = device_name_copy ? device_name_copy : "(null)";
-	struct mount_entry *new_entry;
-
-	if (unlikely(!dirname_copy)) // if dirname is null thats just questionable
-		goto out;
-	
-	/*
-	 * feel free to add your own patterns
-	 * default one is just KSU devname or it starts with /data/adb/modules
-	 *
-	 * for devicenamme and fstype string comparisons, make sure to use string_fstype/string_devname as NULL is being allowed.
-	 * using device_name_copy, fstype_copy can lead to null pointer dereference.
-	 */
-	if ((!strcmp(string_devname, "KSU")) 
-	//	|| !strcmp(dirname_copy, "/system/etc/hosts") // this is an example
-		|| strstarts(dirname_copy, "/data/adb/modules") ) {
-		new_entry = kmalloc(sizeof(*new_entry), GFP_KERNEL);
-		if (new_entry) {
-			new_entry->umountable = kstrdup(dirname, GFP_KERNEL);
-			list_add(&new_entry->list, &mount_list);
-			ksu_unmountable_count++;
-			pr_info("%s: devicename: %s fstype: %s path: %s count: %d\n", __func__, string_devname, string_fstype, new_entry->umountable, ksu_unmountable_count);
-		}
-	}
-out:
-	kfree(device_name_copy);
-	kfree(fstype_copy);
-	kfree(dirname_copy);
-	return 0;
-}
 
 // kernel 4.4 and 4.9
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 10, 0) ||	\
@@ -1130,27 +1093,6 @@ int ksu_inode_permission(struct inode *inode, int mask)
 }
 #endif
 
-int ksu_sb_mount(const char *dev_name, const struct path *path,
-                        const char *type, unsigned long flags, void *data)
-{
-	/* 
-	 * 384 is what throne_tracker uses, something sensible even for /data/app
-	 * we can pattern match revanced mounts even.
-	 * we are not really interested on mountpoints that are longer than that
-	 * this is now up to the modder for tweaking
-	 */
-	char buf[384];
-	char *dir_name = d_path(path, buf, sizeof(buf));
-
-	if (dir_name && dir_name != buf) {
-#ifdef CONFIG_KSU_DEBUG
-		pr_info("security_sb_mount: devname: %s path: %s type: %s \n", dev_name, dir_name, type);
-#endif
-		return ksu_mount_monitor(dev_name, dir_name, type);
-	} else {
-		return 0;
-	}
-}
 
 
 #ifdef CONFIG_KSU_LSM_SECURITY_HOOKS
