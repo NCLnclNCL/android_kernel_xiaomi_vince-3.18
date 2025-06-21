@@ -6,6 +6,24 @@ use log::{info, warn};
 use rustix::fs::{MountFlags, mount};
 use std::path::Path;
 
+// https://github.com/tiann/KernelSU/blob/v0.9.5/userspace/ksud/src/mount.rs#L158
+#[cfg(any(target_os = "linux", target_os = "android"))]
+fn mount_tmpfs(dest: impl AsRef<Path>) -> Result<()> {
+    mount(
+        KSU_MOUNT_SOURCE,
+        dest.as_ref(),
+        "tmpfs",
+        MountFlags::empty(),
+        "",
+    )?;
+    Ok(())
+}
+
+#[cfg(not(any(target_os = "linux", target_os = "android")))]
+fn mount_tmpfs(dest: impl AsRef<Path>) -> Result<()> {
+    unimplemented!()
+}
+
 pub fn on_post_data_fs() -> Result<()> {
     ksucalls::report_post_fs_data();
 
@@ -69,7 +87,7 @@ pub fn on_post_data_fs() -> Result<()> {
 
     // mount temp dir
     if !Path::new(NO_TMPFS_PATH).exists() {
-        if let Err(e) = mount(KSU_MOUNT_SOURCE, utils::get_tmp_path(), "tmpfs", MountFlags::empty(), "") {
+        if let Err(e) = mount_tmpfs(utils::get_tmp_path()) {
             warn!("do temp dir mount failed: {}", e);
         }
     } else {

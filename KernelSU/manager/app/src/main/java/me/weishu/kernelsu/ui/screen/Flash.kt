@@ -210,6 +210,8 @@ sealed class FlashIt : Parcelable {
     data class FlashBoot(val boot: Uri? = null, val lkm: LkmSelection, val ota: Boolean) :
         FlashIt()
 
+    data class FlashModule(val uri: Uri) : FlashIt()
+
     data class FlashModules(val uris: List<Uri>) : FlashIt()
 
     data object FlashRestore : FlashIt()
@@ -230,6 +232,8 @@ fun flashIt(
             onStdout,
             onStderr
         )
+
+        is FlashIt.FlashModule -> flashModule(flashIt.uri, onStdout, onStderr)
 
         is FlashIt.FlashModules -> {
             flashModulesSequentially(flashIt.uris, onStdout, onStderr)
