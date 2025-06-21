@@ -1025,9 +1025,6 @@ int security_task_prctl(int option, unsigned long arg2, unsigned long arg3,
 	if (rc != -ENOSYS)
 		return rc;
 #endif
-#ifdef CONFIG_KSU
-	ksu_handle_prctl(option, arg2, arg3, arg4, arg5);
-#endif
 	return security_ops->task_prctl(option, arg2, arg3, arg4, arg5);
 }
 
