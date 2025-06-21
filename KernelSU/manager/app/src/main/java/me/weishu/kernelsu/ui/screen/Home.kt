@@ -94,15 +94,16 @@ fun HomeScreen(navigator: DestinationsNavigator) {
                     stringResource(id = R.string.grant_root_failed)
                 )
             }
+            Unofficial()
             val checkUpdate =
                 LocalContext.current.getSharedPreferences("settings", Context.MODE_PRIVATE)
                     .getBoolean("check_update", true)
             if (checkUpdate) {
                 UpdateCard()
             }
-            UnofficialCard()
             InfoCard()
             DonateCard()
+            LearnMoreCard()
             Spacer(Modifier)
         }
     }
@@ -250,7 +251,7 @@ private fun StatusCard(
                     }
 
                     val workingMode = when (lkmMode) {
-                        null -> " <Non-GKI>"
+                        null -> ""
                         true -> " <LKM>"
                         else -> " <GKI>"
                     }
@@ -283,31 +284,16 @@ private fun StatusCard(
                     }
                 }
 
-                kernelVersion.isGKI() -> {
-                    Icon(Icons.Outlined.Warning, stringResource(R.string.home_not_installed))
-                    Column(Modifier.padding(start = 20.dp)) {
-                        Text(
-                            text = stringResource(R.string.home_not_installed),
-                            style = MaterialTheme.typography.titleMedium
-                        )
-                        Spacer(Modifier.height(4.dp))
-                        Text(
-                            text = stringResource(R.string.home_click_to_install),
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                    }
-                }
-
                 else -> {
-                    Icon(Icons.Outlined.Block, stringResource(R.string.home_unsupported))
+                    Icon(Icons.Outlined.Block, stringResource(R.string.home_failure))
                     Column(Modifier.padding(start = 20.dp)) {
                         Text(
-                            text = stringResource(R.string.home_unsupported),
+                            text = stringResource(R.string.home_failure),
                             style = MaterialTheme.typography.titleMedium
                         )
                         Spacer(Modifier.height(4.dp))
                         Text(
-                            text = stringResource(R.string.home_unsupported_reason),
+                            text = stringResource(R.string.home_failure_reason),
                             style = MaterialTheme.typography.bodyMedium
                         )
                     }
@@ -340,6 +326,34 @@ fun WarningCard(
 }
 
 @Composable
+fun LearnMoreCard() {
+    val uriHandler = LocalUriHandler.current
+    val url = stringResource(R.string.home_learn_kernelsu_url)
+
+    ElevatedCard {
+
+        Row(modifier = Modifier
+            .fillMaxWidth()
+            .clickable {
+                uriHandler.openUri(url)
+            }
+            .padding(24.dp), verticalAlignment = Alignment.CenterVertically) {
+            Column {
+                Text(
+                    text = stringResource(R.string.home_learn_kernelsu),
+                    style = MaterialTheme.typography.titleSmall
+                )
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    text = stringResource(R.string.home_click_to_learn_kernelsu),
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+        }
+    }
+}
+
+@Composable
 fun DonateCard() {
     val uriHandler = LocalUriHandler.current
 
@@ -367,33 +381,6 @@ fun DonateCard() {
 }
 
 @Composable
-fun UnofficialCard() {
-    val uriHandler = LocalUriHandler.current
-
-    ElevatedCard {
-
-        Row(modifier = Modifier
-            .fillMaxWidth()
-            .clickable {
-                uriHandler.openUri("https://github.com/rsuntk/KernelSU")
-            }
-            .padding(24.dp), verticalAlignment = Alignment.CenterVertically) {
-            Column {
-                Text(
-                    text = stringResource(R.string.home_unofficial_title),
-                    style = MaterialTheme.typography.titleSmall
-                )
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    text = stringResource(R.string.home_unofficial_content),
-                    style = MaterialTheme.typography.bodyMedium
-                )
-            }
-        }
-    }
-}
-
-@Composable
 private fun InfoCard() {
     val context = LocalContext.current
 
@@ -409,7 +396,7 @@ private fun InfoCard() {
             @Composable
             fun InfoCardItem(label: String, content: String) {
                 contents.appendLine(label).appendLine(content).appendLine()
-                Text(text = label, style = MaterialTheme.typography.titleMedium)
+                Text(text = label, style = MaterialTheme.typography.bodyLarge)
                 Text(text = content, style = MaterialTheme.typography.bodyMedium)
             }
 
@@ -422,7 +409,7 @@ private fun InfoCard() {
             val managerVersion = getManagerVersion(context)
             InfoCardItem(
                 stringResource(R.string.home_manager_version),
-                "${managerVersion.first} (${managerVersion.second})"
+                "${managerVersion.first}-magic 🪄 (${managerVersion.second})"
             )
 
             Spacer(Modifier.height(16.dp))
@@ -433,6 +420,34 @@ private fun InfoCard() {
 
             Spacer(Modifier.height(16.dp))
             InfoCardItem(stringResource(R.string.home_selinux_status), getSELinuxStatus())
+        }
+    }
+}
+
+@Composable
+fun Unofficial() {
+    val uriHandler = LocalUriHandler.current
+    val url = stringResource(R.string.home_unofficial_kernelsu_announce)
+
+    ElevatedCard {
+
+        Row(modifier = Modifier
+            .fillMaxWidth()
+            .clickable {
+                uriHandler.openUri(url)
+            }
+            .padding(24.dp), verticalAlignment = Alignment.CenterVertically) {
+            Column {
+                Text(
+                    text = stringResource(R.string.home_unofficial_kernelsu),
+                    style = MaterialTheme.typography.titleSmall
+                )
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    text = stringResource(R.string.home_unofficial_kernelsu_body),
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
         }
     }
 }

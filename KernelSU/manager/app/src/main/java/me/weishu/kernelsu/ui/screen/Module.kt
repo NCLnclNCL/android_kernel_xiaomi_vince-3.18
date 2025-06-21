@@ -36,8 +36,8 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.outlined.PlayArrow
 import androidx.compose.material.icons.outlined.Download
 import androidx.compose.material.icons.outlined.Delete
-import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
@@ -231,7 +231,7 @@ fun ModuleScreen(navigator: DestinationsNavigator) {
                     }
 
                     if (uris.size == 1) {
-                        navigator.navigate(FlashScreenDestination(FlashIt.FlashModule(uris.first())))
+                        navigator.navigate(FlashScreenDestination(FlashIt.FlashModules(listOf(uris.first()))))
                     } else if (uris.size > 1)  {
                         // multiple files selected
                         val moduleNames = uris.mapIndexed { index, uri -> "\n${index + 1}. ${uri.getFileName(context)}" }.joinToString("")
@@ -285,7 +285,7 @@ fun ModuleScreen(navigator: DestinationsNavigator) {
                     modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
                     boxModifier = Modifier.padding(innerPadding),
                     onInstallModule = {
-                        navigator.navigate(FlashScreenDestination(FlashIt.FlashModule(it)))
+                        navigator.navigate(FlashScreenDestination(FlashIt.FlashModules(listOf(it))))
                     },
                     onClickModule = { id, name, hasWebUi ->
                         if (hasWebUi) {
@@ -442,7 +442,6 @@ private fun ModuleList(
         val result = snackBarHost.showSnackbar(
             message = message,
             actionLabel = actionLabel,
-            withDismissAction = true,
             duration = SnackbarDuration.Long
         )
         if (result == SnackbarResult.ActionPerformed) {
@@ -512,7 +511,6 @@ private fun ModuleList(
                                         val result = snackBarHost.showSnackbar(
                                             message = rebootToApply,
                                             actionLabel = reboot,
-                                            withDismissAction = true,
                                             duration = SnackbarDuration.Long
                                         )
                                         if (result == SnackbarResult.ActionPerformed) {
@@ -575,6 +573,7 @@ fun ModuleItem(
                     if (module.hasWebUi) {
                         toggleable(
                             value = module.enabled,
+                            enabled = !module.remove && module.enabled,
                             interactionSource = interactionSource,
                             role = Role.Button,
                             indication = indication,
@@ -591,6 +590,7 @@ fun ModuleItem(
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 val moduleVersion = stringResource(id = R.string.module_version)
+                val moduleId = stringResource(id = R.string.module_id)
                 val moduleAuthor = stringResource(id = R.string.module_author)
 
                 Column(
@@ -607,6 +607,14 @@ fun ModuleItem(
 
                     Text(
                         text = "$moduleVersion: ${module.version}",
+                        fontSize = MaterialTheme.typography.bodySmall.fontSize,
+                        lineHeight = MaterialTheme.typography.bodySmall.lineHeight,
+                        fontFamily = MaterialTheme.typography.bodySmall.fontFamily,
+                        textDecoration = textDecoration
+                    )
+
+                    Text(
+                        text = "$moduleId: ${module.id}",
                         fontSize = MaterialTheme.typography.bodySmall.fontSize,
                         lineHeight = MaterialTheme.typography.bodySmall.lineHeight,
                         fontFamily = MaterialTheme.typography.bodySmall.fontFamily,
@@ -664,6 +672,7 @@ fun ModuleItem(
                 if (module.hasActionScript) {
                     FilledTonalButton(
                         modifier = Modifier.defaultMinSize(52.dp, 32.dp),
+                        enabled = !module.remove && module.enabled,
                         onClick = {
                             navigator.navigate(ExecuteModuleActionScreenDestination(module.dirId))
                             viewModel.markNeedRefresh()
@@ -691,10 +700,8 @@ fun ModuleItem(
                 if (module.hasWebUi) {
                     FilledTonalButton(
                         modifier = Modifier.defaultMinSize(52.dp, 32.dp),
-                        onClick = {
-                        	onClick(module)
-                        	viewModel.markNeedRefresh()
-                        },
+                        enabled = !module.remove && module.enabled,
+                        onClick = { onClick(module) },
                         interactionSource = interactionSource,
                         contentPadding = ButtonDefaults.TextButtonContentPadding
                     ) {
@@ -719,6 +726,7 @@ fun ModuleItem(
                 if (updateUrl.isNotEmpty()) {
                     Button(
                         modifier = Modifier.defaultMinSize(52.dp, 32.dp),
+                        enabled = !module.remove,
                         onClick = { onUpdate(module) },
                         shape = ButtonDefaults.textShape,
                         contentPadding = ButtonDefaults.TextButtonContentPadding

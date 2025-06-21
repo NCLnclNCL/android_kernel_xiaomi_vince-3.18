@@ -203,6 +203,9 @@ pub fn root_shell() -> Result<()> {
         let name = &matches.free[free_idx];
         uid = unsafe {
             let pw = libc::getpwnam(name.as_ptr()).as_ref();
+            #[cfg(target_arch = "x86_64")]
+            let pw = libc::getpwnam(name.as_ptr() as *const i8).as_ref();
+
             match pw {
                 Some(pw) => pw.pw_uid,
                 None => name.parse::<u32>().unwrap_or(0),
@@ -257,10 +260,7 @@ pub fn root_shell() -> Result<()> {
 
             // switch to global mount namespace
             #[cfg(any(target_os = "linux", target_os = "android"))]
-            let global_namespace_enable =
-                std::fs::read_to_string(defs::GLOBAL_NAMESPACE_FILE)
-                    .unwrap_or("0".to_string());
-            if global_namespace_enable.trim() == "1" || mount_master {
+            if mount_master {
                 let _ = utils::switch_mnt_ns(1);
             }
 

@@ -9,11 +9,15 @@ edition = "2024"
 anyhow = "1"
 clap = { version = "4", features = ["derive"] }
 const_format = "0.2"
-zip = { version = "2", default-features = false }
-zip-extensions = { version = "0.8", features = [
+zip = { version = "3",  features = [
     "deflate",
     "deflate64",
     "time",
+    "lzma",
+    "xz",
+], default-features = false }
+zip-extensions = { version = "0.8", features = [
+    "deflate",
     "lzma",
     "xz",
 ], default-features = false }
@@ -40,6 +44,7 @@ sha1 = "0.10"
 tempfile = "3"
 chrono = "0.4"
 regex-lite = "0.1"
+fs4 = "0.13"
 
 [target.'cfg(any(target_os = "android", target_os = "linux"))'.dependencies]
 rustix = { git = "https://github.com/Kernel-SU/rustix.git", branch = "main", features = [
@@ -47,11 +52,10 @@ rustix = { git = "https://github.com/Kernel-SU/rustix.git", branch = "main", fea
 ] }
 # some android specific dependencies which compiles under unix are also listed here for convenience of coding
 android-properties = { version = "0.2", features = ["bionic-deprecated"] }
-loopdev = { git = "https://github.com/rksuorg/loopdev.git", branch = "master" }
 procfs = "0.17"
 
 [target.'cfg(target_os = "android")'.dependencies]
-android_logger = { version = "0.14", default-features = false }
+android_logger = { version = "0.15", default-features = false }
 
 [profile.release]
 strip = true

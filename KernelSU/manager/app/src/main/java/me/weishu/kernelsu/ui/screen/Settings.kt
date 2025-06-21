@@ -23,7 +23,6 @@ import androidx.compose.material.icons.automirrored.filled.Undo
 import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.Compress
 import androidx.compose.material.icons.filled.ContactPage
-import androidx.compose.material.icons.filled.Engineering
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DeleteForever
 import androidx.compose.material.icons.filled.DeveloperMode
@@ -81,7 +80,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import me.weishu.kernelsu.BuildConfig
 import me.weishu.kernelsu.Natives
-import me.weishu.kernelsu.ksuApp
 import me.weishu.kernelsu.R
 import me.weishu.kernelsu.ui.component.AboutDialog
 import me.weishu.kernelsu.ui.component.ConfirmResult
@@ -93,8 +91,6 @@ import me.weishu.kernelsu.ui.component.rememberCustomDialog
 import me.weishu.kernelsu.ui.component.rememberLoadingDialog
 import me.weishu.kernelsu.ui.util.LocalSnackbarHost
 import me.weishu.kernelsu.ui.util.getBugreportFile
-import me.weishu.kernelsu.ui.util.isGlobalNamespaceEnabled
-import me.weishu.kernelsu.ui.util.setGlobalNamespaceEnabled
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
@@ -108,8 +104,6 @@ import java.time.format.DateTimeFormatter
 fun SettingScreen(navigator: DestinationsNavigator) {
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
     val snackBarHost = LocalSnackbarHost.current
-    var isGlobalNamespaceEnabled by rememberSaveable { mutableStateOf(false) }
-    isGlobalNamespaceEnabled = isGlobalNamespaceEnabled()
 
     Scaffold(
         topBar = {
@@ -170,7 +164,7 @@ fun SettingScreen(navigator: DestinationsNavigator) {
             var umountChecked by rememberSaveable {
                 mutableStateOf(Natives.isDefaultUmountModules())
             }
-            
+
             KsuIsValid() {
                 SwitchItem(
                     icon = Icons.Filled.FolderDelete,
@@ -182,7 +176,9 @@ fun SettingScreen(navigator: DestinationsNavigator) {
                         umountChecked = it
                     }
                 }
+            }
 
+            KsuIsValid() {
                 if (Natives.version >= Natives.MINIMAL_SUPPORTED_SU_COMPAT) {
                     var isSuDisabled by rememberSaveable {
                         mutableStateOf(!Natives.isSuEnabled())
@@ -199,29 +195,12 @@ fun SettingScreen(navigator: DestinationsNavigator) {
                         }
                     }
                 }
-                
-                SwitchItem(
-                    icon = Icons.Filled.Engineering,
-                    title = stringResource(id = R.string.settings_global_namespace_mode),
-                    summary = stringResource(id = R.string.settings_global_namespace_mode_summary),
-                    checked = isGlobalNamespaceEnabled,
-                    onCheckedChange = {
-                        setGlobalNamespaceEnabled(
-                            if (isGlobalNamespaceEnabled) {
-                                "0"
-                            } else {
-                                "1"
-                            }
-                        )
-                        isGlobalNamespaceEnabled = it
-                    }
-                )
             }
 
             val prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
             var checkUpdate by rememberSaveable {
                 mutableStateOf(
-                    prefs.getBoolean("check_update", false)
+                    prefs.getBoolean("check_update", true)
                 )
             }
             SwitchItem(
@@ -239,19 +218,18 @@ fun SettingScreen(navigator: DestinationsNavigator) {
                     prefs.getBoolean("enable_web_debugging", false)
                 )
             }
-            
-            KsuIsValid() {
-                SwitchItem(
-                    icon = Icons.Filled.DeveloperMode,
-                    title = stringResource(id = R.string.enable_web_debugging),
-                    summary = stringResource(id = R.string.enable_web_debugging_summary),
-                    checked = enableWebDebugging
-                ) {
-                    prefs.edit().putBoolean("enable_web_debugging", it).apply()
-                    enableWebDebugging = it
-                }
+
+            // mksu-changed: `KsuIsValid` is not needed
+            SwitchItem(
+                icon = Icons.Filled.DeveloperMode,
+                title = stringResource(id = R.string.enable_web_debugging),
+                summary = stringResource(id = R.string.enable_web_debugging_summary),
+                checked = enableWebDebugging
+            ) {
+                prefs.edit().putBoolean("enable_web_debugging", it).apply()
+                enableWebDebugging = it
             }
-            
+
             var showBottomsheet by remember { mutableStateOf(false) }
 
             ListItem(

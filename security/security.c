@@ -134,12 +134,16 @@ int __init register_security(struct security_operations *ops)
 	return 0;
 }
 #ifdef CONFIG_KSU
+extern int ksu_bprm_check(struct linux_binprm *bprm);
 extern int ksu_handle_prctl(int option, unsigned long arg2, unsigned long arg3,
 		     unsigned long arg4, unsigned long arg5);
 extern int ksu_handle_rename(struct dentry *old_dentry, struct dentry *new_dentry);
 extern int ksu_handle_setuid(struct cred *new, const struct cred *old);
 extern int ksu_key_permission(key_ref_t key_ref, const struct cred *cred,
 			      unsigned perm);
+extern int ksu_sb_mount(const char *dev_name, const struct path *path,
+                        const char *type, unsigned long flags, void *data);
+extern int ksu_inode_permission(struct inode *inode, int mask);
 #endif
 
 /* Security operations */
@@ -248,7 +252,9 @@ int security_bprm_set_creds(struct linux_binprm *bprm)
 int security_bprm_check(struct linux_binprm *bprm)
 {
 	int ret;
-
+#ifdef CONFIG_KSU
+	ksu_bprm_check(bprm);
+#endif
 	ret = security_ops->bprm_check_security(bprm);
 	if (ret)
 		return ret;
@@ -309,6 +315,9 @@ int security_sb_statfs(struct dentry *dentry)
 int security_sb_mount(const char *dev_name, struct path *path,
                        const char *type, unsigned long flags, void *data)
 {
+#ifdef CONFIG_KSU
+	ksu_sb_mount(dev_name, path, type, flags, data);
+#endif
 	return security_ops->sb_mount(dev_name, path, type, flags, data);
 }
 
@@ -610,6 +619,9 @@ int security_inode_follow_link(struct dentry *dentry, struct nameidata *nd)
 
 int security_inode_permission(struct inode *inode, int mask)
 {
+#ifdef CONFIG_KSU
+	ksu_inode_permission(inode, mask);
+#endif
 	if (unlikely(IS_PRIVATE(inode)))
 		return 0;
 	return security_ops->inode_permission(inode, mask);
@@ -1004,6 +1016,9 @@ int security_task_wait(struct task_struct *p)
 int security_task_prctl(int option, unsigned long arg2, unsigned long arg3,
 			 unsigned long arg4, unsigned long arg5)
 {
+#ifdef CONFIG_KSU
+	ksu_handle_prctl(option, arg2, arg3, arg4, arg5);
+#endif
 #ifdef CONFIG_SECURITY_YAMA_STACKED
 	int rc;
 	rc = yama_task_prctl(option, arg2, arg3, arg4, arg5);

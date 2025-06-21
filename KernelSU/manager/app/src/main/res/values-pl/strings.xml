@@ -36,7 +36,7 @@
     <string name="about">Informacje</string>
     <string name="module_uninstall_confirm">Czy na pewno chcesz odinstalować moduł %s?</string>
     <string name="module_uninstall_success">Odinstalowano %s</string>
-    <string name="module_uninstall_failed">Nie udało się odinstalować:: %s</string>
+    <string name="module_uninstall_failed">Nie udało się odinstalować: %s</string>
     <string name="module_version">Wersja</string>
     <string name="module_author">Autor</string>
     <string name="refresh">Odśwież</string>
@@ -78,7 +78,7 @@
     <string name="launch_app">Uruchom</string>
     <string name="force_stop_app">Wymuś zatrzymanie</string>
     <string name="restart_app">Restartuj</string>
-    <string name="failed_to_update_sepolicy">Nie udało się zaktualizować reguł SELinux dla: %s</string>
+    <string name="failed_to_update_sepolicy">Nie udało się zaktualizować reguł SELinux dla %s</string>
     <string name="require_kernel_version">Obecna wersja KernelSU %d jest zbyt stara, aby menedżer działał poprawnie. Prosimy o aktualizację do wersji %d lub nowszej!</string>
     <string name="module_changelog">Dziennik zmian</string>
     <string name="enable_web_debugging">Włącz debugowanie WebView</string>
@@ -118,8 +118,6 @@
     <string name="module_changelog_failed">Pobranie dziennika zmian nie powiodło się: %s</string>
     <string name="settings_check_update">Wyszukaj aktualizacje</string>
     <string name="settings_check_update_summary">Wyszukuj aktualizacje automatycznie przy otwieraniu aplikacji</string>
-    <string name="shrink_sparse_image">Minimalizuj rozrzedzony (sparse) obraz</string>
-    <string name="shrink_sparse_image_message">Zmienia rozmiar obrazu rozrzedzonego(sparse), w którym znajduje się moduł, do jego rzeczywistego rozmiaru. Należy pamiętać, że może to spowodować nieprawidłowe działanie modułu, więc należy go używać tylko wtedy, gdy jest to konieczne (np. do tworzenia kopii zapasowych).</string>
     <string name="settings_uninstall_permanent">Odinstaluj zupełnie</string>
     <string name="settings_restore_stock_image">Przywróć obraz fabryczny</string>
     <string name="settings_uninstall_temporary">Odinstaluj tymczasowo</string>
@@ -133,4 +131,12 @@
     <string name="selected_lkm">Wybrano LKM: %s</string>
     <string name="save_log">Zapisz dzienniki</string>
     <string name="action">Akcja</string>
+    <string name="log_saved">Dzienniki zapisane</string>
+    <string name="module_sort_action_first">Sortuj (najpierw działania)</string>
+    <string name="module_sort_enabled_first">Sortuj (najpierw włączone)</string>
+    <string name="confirm">Potwierdź</string>
+    <string name="settings_disable_su_summary">Tymczasowo wyłącz możliwość uzyskania uprawnień roota przez dowolną aplikację za pomocą polecenia su (nie wpłynie to na istniejące procesy roota).</string>
+    <string name="module_install_prompt_with_name">Zainstalowane zostaną następujące moduły: %1$s</string>
+    <string name="settings_disable_su">Wyłącz zgodność z su</string>
+    <string name="su_not_allowed">Nie można przyznać dostępu superużytkownika do %s</string>
 </resources>

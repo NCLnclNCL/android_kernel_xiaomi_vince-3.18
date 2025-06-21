@@ -2,32 +2,16 @@
 #include <linux/fs.h>
 #include <linux/kobject.h>
 #include <linux/module.h>
+#include <generated/utsrelease.h>
+#include <generated/compile.h>
+#include <linux/version.h> /* LINUX_VERSION_CODE, KERNEL_VERSION macros */
 #include <linux/workqueue.h>
 
 #include "allowlist.h"
-#include "arch.h"
 #include "core_hook.h"
 #include "klog.h" // IWYU pragma: keep
 #include "ksu.h"
 #include "throne_tracker.h"
-
-#ifdef CONFIG_KSU_CMDLINE
-#include <linux/init.h>
-
-// use get_ksu_state()!
-unsigned int enable_kernelsu = 1; // enabled by default
-static int __init read_kernelsu_state(char *s)
-{
-	if (s)
-		enable_kernelsu = simple_strtoul(s, NULL, 0);
-	return 1;
-}
-__setup("kernelsu.enabled=", read_kernelsu_state);
-
-bool get_ksu_state(void) { return enable_kernelsu >= 1; }
-#else
-bool get_ksu_state(void) { return true; }
-#endif /* CONFIG_KSU_CMDLINE */
 
 #ifdef CONFIG_KSU_SUSFS
 #include <linux/susfs.h>
@@ -40,6 +24,7 @@ bool ksu_queue_work(struct work_struct *work)
 	return queue_work(ksu_workqueue, work);
 }
 
+#ifdef KSU_USE_STRUCT_FILENAME
 extern int ksu_handle_execveat_sucompat(int *fd, struct filename **filename_ptr,
 					void *argv, void *envp, int *flags);
 
@@ -53,23 +38,72 @@ int ksu_handle_execveat(int *fd, struct filename **filename_ptr, void *argv,
 	return ksu_handle_execveat_sucompat(fd, filename_ptr, argv, envp,
 					    flags);
 }
+#endif // KSU_USE_STRUCT_FILENAME
 
-extern void ksu_sucompat_init();
-extern void ksu_sucompat_exit();
-extern void ksu_ksud_init();
-extern void ksu_ksud_exit();
+// track backports and other quirks here
+// ref: kernel_compat.c, Makefile
+// yes looks nasty
+#ifdef KSU_USE_STRUCT_FILENAME
+	#define FEAT_1 " +uses_struct_filename"
+#else
+	#define FEAT_1 ""
+#endif
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 2, 0) && !defined(CONFIG_KSU_LSM_SECURITY_HOOKS)
+	#define FEAT_2 " -lsm_hooks"
+#else
+	#define FEAT_2 ""
+#endif
+#if !(LINUX_VERSION_CODE >= KERNEL_VERSION(4, 9, 0)) && defined(CONFIG_KSU_ALLOWLIST_WORKAROUND)
+	#define FEAT_3 " +allowlist_workaround"
+#else
+	#define FEAT_3 ""
+#endif
+#if !(LINUX_VERSION_CODE >= KERNEL_VERSION(4, 4, 0)) && defined(KSU_HAS_MODERN_EXT4)
+	#define FEAT_4 " +ext4_unregister_sysfs"
+#else
+	#define FEAT_4 ""
+#endif
+#if !(LINUX_VERSION_CODE >= KERNEL_VERSION(5, 9, 0)) && defined(KSU_HAS_PATH_UMOUNT)
+	#define FEAT_5 " +path_umount"
+#else
+	#define FEAT_5 ""
+#endif
+#if !(LINUX_VERSION_CODE >= KERNEL_VERSION(5, 8, 0)) && defined(KSU_STRNCPY_FROM_USER_NOFAULT)
+	#define FEAT_6 " +strncpy_from_user_nofault"
+#else
+	#define FEAT_6 ""
+#endif
+#if !(LINUX_VERSION_CODE >= KERNEL_VERSION(5, 3, 0)) && defined(KSU_STRNCPY_FROM_UNSAFE_USER)
+	#define FEAT_7 " +strncpy_from_unsafe_user"
+#else
+	#define FEAT_7 ""
+#endif
+#if !(LINUX_VERSION_CODE >= KERNEL_VERSION(4, 14, 0)) && defined(KSU_NEW_KERNEL_READ)
+	#define FEAT_8 " +new_kernel_read"
+#else
+	#define FEAT_8 ""
+#endif
+#if !(LINUX_VERSION_CODE >= KERNEL_VERSION(4, 14, 0)) && defined(KSU_NEW_KERNEL_WRITE)
+	#define FEAT_9 " +new_kernel_write"
+#else
+	#define FEAT_9 ""
+#endif
+#if !(LINUX_VERSION_CODE >= KERNEL_VERSION(3, 16, 0)) && defined(KSU_HAS_FOP_READ_ITER)
+	#define FEAT_10 " +read_iter"
+#else
+	#define FEAT_10 ""
+#endif
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 11, 0) && defined(KSU_HAS_ITERATE_DIR)
+	#define FEAT_11 " +iterate_dir"
+#else
+	#define FEAT_11 ""
+#endif
+
+#define EXTRA_FEATURES FEAT_1 FEAT_2 FEAT_3 FEAT_4 FEAT_5 FEAT_6 FEAT_7 FEAT_8 FEAT_9 FEAT_10 FEAT_11
 
 int __init ksu_kernelsu_init(void)
 {
-	pr_info("kernelsu.enabled=%d\n",
-		(int)get_ksu_state());
-
-#ifdef CONFIG_KSU_CMDLINE
-	if (!get_ksu_state()) {
-		pr_info_once("drivers is disabled.");
-		return 0;
-	}
-#endif
+	pr_info("Initialized on: %s (%s) with ksuver: %s%s\n", UTS_RELEASE, UTS_MACHINE, __stringify(KSU_VERSION), EXTRA_FEATURES);
 
 #ifdef CONFIG_KSU_DEBUG
 	pr_alert("*************************************************************");
@@ -93,41 +127,17 @@ int __init ksu_kernelsu_init(void)
 
 	ksu_throne_tracker_init();
 
-	ksu_sucompat_init();
-
-#ifdef CONFIG_KSU_KPROBES_HOOK
-	ksu_ksud_init();
-#else
-	pr_debug("init ksu driver\n");
-#endif
-
-#ifdef MODULE
-#ifndef CONFIG_KSU_DEBUG
-	kobject_del(&THIS_MODULE->mkobj.kobj);
-#endif
-#endif
 	return 0;
 }
 
 void ksu_kernelsu_exit(void)
 {
-#ifdef CONFIG_KSU_CMDLINE
-	if (!get_ksu_state()) {
-		return;
-	}
-#endif
 	ksu_allowlist_exit();
 
 	ksu_throne_tracker_exit();
 
 	destroy_workqueue(ksu_workqueue);
 
-#ifdef CONFIG_KSU_KPROBES_HOOK
-	ksu_ksud_exit();
-#endif
-	ksu_sucompat_exit();
-
-	ksu_core_exit();
 }
 
 module_init(ksu_kernelsu_init);
@@ -137,7 +147,6 @@ MODULE_LICENSE("GPL");
 MODULE_AUTHOR("weishu");
 MODULE_DESCRIPTION("Android KernelSU");
 
-#include <linux/version.h>
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 0, 0)
 MODULE_IMPORT_NS(VFS_internal_I_am_really_a_filesystem_and_am_NOT_a_driver);
 #endif
