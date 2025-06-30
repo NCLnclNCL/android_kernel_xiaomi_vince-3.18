@@ -623,7 +623,7 @@ else
 KBUILD_CFLAGS	+= -O2
 endif
 KBUILD_CFLAGS += -march=armv8-a -mcpu=cortex-a53 -mtune=cortex-a53
-KBUILD_AFLAGS += -march=armv8-a -mcpu=cortex-a53 -mtune=cortex-a53
+#KBUILD_AFLAGS += -march=armv8-a -mcpu=cortex-a53 -mtune=cortex-a53
 # Tell gcc to never replace conditional load with a non-conditional one
 KBUILD_CFLAGS	+= $(call cc-option,--param=allow-store-data-races=0)
 
