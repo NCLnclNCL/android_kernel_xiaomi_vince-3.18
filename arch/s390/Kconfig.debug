@@ -20,7 +20,6 @@ config STRICT_DEVMEM
 config S390_PTDUMP
 	bool "Export kernel pagetable layout to userspace via debugfs"
 	depends on DEBUG_KERNEL
-	select DEBUG_FS
 	---help---
 	  Say Y here if you want to show the kernel pagetable layout in a
 	  debugfs file. This information is only useful for kernel developers
