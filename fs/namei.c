@@ -36,7 +36,7 @@
 #include <linux/posix_acl.h>
 #include <linux/hash.h>
 #include <asm/uaccess.h>
-#if defined(CONFIG_KSU_SUSFS_SUS_PATH) || defined(>i_mapping->flags & INODE_STATE_SUS_PATH)
+#if defined(CONFIG_KSU_SUSFS_SUS_PATH) || defined(INODE_STATE_SUS_PATH)
 #include <linux/susfs_def.h>
 #endif
 
