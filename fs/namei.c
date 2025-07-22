@@ -36,7 +36,7 @@
 #include <linux/posix_acl.h>
 #include <linux/hash.h>
 #include <asm/uaccess.h>
-#if defined(CONFIG_KSU_SUSFS_SUS_PATH) || defined(CONFIG_KSU_SUSFS_OPEN_REDIRECT)
+#if defined(CONFIG_KSU_SUSFS_SUS_PATH) || defined(>i_mapping->flags & INODE_STATE_SUS_PATH)
 #include <linux/susfs_def.h>
 #endif
 
@@ -764,7 +764,7 @@ static inline int may_follow_link(struct path *link, struct nameidata *nd)
 	const struct inode *parent;
 
 #ifdef CONFIG_KSU_SUSFS_SUS_PATH
-	if (nd->inode && unlikely(nd->inode->i_state & INODE_STATE_SUS_PATH) && likely(current->susfs_task_state & TASK_STRUCT_NON_ROOT_USER_APP_PROC)) {
+	if (nd->inode && unlikely(nd->inode->i_mapping->flags & INODE_STATE_SUS_PATH) && likely(current->susfs_task_state & TASK_STRUCT_NON_ROOT_USER_APP_PROC)) {
 		return -ENOENT;
 	}
 #endif
@@ -845,7 +845,7 @@ static int may_linkat(struct path *link)
 	struct inode *inode;
 
 #ifdef CONFIG_KSU_SUSFS_SUS_PATH
-	if (link->dentry->d_inode && unlikely(link->dentry->d_inode->i_state & INODE_STATE_SUS_PATH) && likely(current->susfs_task_state & TASK_STRUCT_NON_ROOT_USER_APP_PROC)) {
+	if (link->dentry->d_inode && unlikely(link->dentry->d_inode->i_mapping->flags & INODE_STATE_SUS_PATH) && likely(current->susfs_task_state & TASK_STRUCT_NON_ROOT_USER_APP_PROC)) {
 		return -ENOENT;
 	}
 #endif
@@ -1404,7 +1404,7 @@ static struct dentry *lookup_real(struct inode *dir, struct dentry *dentry,
 		dentry = old;
 	}
 #ifdef CONFIG_KSU_SUSFS_SUS_PATH
-	if (!IS_ERR(dentry) && dentry->d_inode && unlikely(dentry->d_inode->i_state & INODE_STATE_SUS_PATH) && likely(current->susfs_task_state & TASK_STRUCT_NON_ROOT_USER_APP_PROC)) {
+	if (!IS_ERR(dentry) && dentry->d_inode && unlikely(dentry->d_inode->i_mapping->flags & INODE_STATE_SUS_PATH) && likely(current->susfs_task_state & TASK_STRUCT_NON_ROOT_USER_APP_PROC)) {
 		dput(dentry);
 		return ERR_PTR(-ENOENT);
 	}
@@ -1420,7 +1420,7 @@ static struct dentry *__lookup_hash(struct qstr *name,
 
 	dentry = lookup_dcache(name, base, flags, &need_lookup);
 #ifdef CONFIG_KSU_SUSFS_SUS_PATH
-	if (!IS_ERR(dentry) && dentry->d_inode && unlikely(dentry->d_inode->i_state & INODE_STATE_SUS_PATH) && likely(current->susfs_task_state & TASK_STRUCT_NON_ROOT_USER_APP_PROC)) {
+	if (!IS_ERR(dentry) && dentry->d_inode && unlikely(dentry->d_inode->i_mapping->flags & INODE_STATE_SUS_PATH) && likely(current->susfs_task_state & TASK_STRUCT_NON_ROOT_USER_APP_PROC)) {
 		dput(dentry);
 		return ERR_PTR(-ENOENT);
 	}
@@ -1888,7 +1888,7 @@ static int link_path_walk(const char *name, struct nameidata *nd)
 		}
 #ifdef CONFIG_KSU_SUSFS_SUS_PATH
 		// we deal with sus sub path here
-		if (nd->inode && unlikely(nd->inode->i_state & INODE_STATE_SUS_PATH) && likely(current->susfs_task_state & TASK_STRUCT_NON_ROOT_USER_APP_PROC)) {
+		if (nd->inode && unlikely(nd->inode->i_mapping->flags & INODE_STATE_SUS_PATH) && likely(current->susfs_task_state & TASK_STRUCT_NON_ROOT_USER_APP_PROC)) {
 			return 0;
 		}
 #endif
@@ -2528,7 +2528,7 @@ static int may_delete(struct vfsmount *mnt, struct inode *dir, struct dentry *vi
 	if (IS_APPEND(dir))
 		return -EPERM;
 #ifdef CONFIG_KSU_SUSFS_SUS_PATH
-	if (unlikely(inode->i_state & INODE_STATE_SUS_PATH) && likely(current->susfs_task_state & TASK_STRUCT_NON_ROOT_USER_APP_PROC)) {
+	if (unlikely(inode->i_mapping->flags & INODE_STATE_SUS_PATH) && likely(current->susfs_task_state & TASK_STRUCT_NON_ROOT_USER_APP_PROC)) {
 		return -ENOENT;
 	}
 #endif
@@ -2564,7 +2564,7 @@ static inline int may_create(struct vfsmount *mnt, struct inode *dir, struct den
 #endif
 	audit_inode_child(dir, child, AUDIT_TYPE_CHILD_CREATE);
 #ifdef CONFIG_KSU_SUSFS_SUS_PATH
-	if (child->d_inode && unlikely(child->d_inode->i_state & INODE_STATE_SUS_PATH) && likely(current->susfs_task_state & TASK_STRUCT_NON_ROOT_USER_APP_PROC)) {
+	if (child->d_inode && unlikely(child->d_inode->i_mapping->flags & INODE_STATE_SUS_PATH) && likely(current->susfs_task_state & TASK_STRUCT_NON_ROOT_USER_APP_PROC)) {
 		error = inode_permission2(mnt, dir, MAY_WRITE | MAY_EXEC);
 		if (error) {
 			return error;
@@ -2672,7 +2672,7 @@ static int may_open(struct path *path, int acc_mode, int flag)
 		return -ENOENT;
 
 #ifdef CONFIG_KSU_SUSFS_SUS_PATH
-	if (unlikely(inode->i_state & INODE_STATE_SUS_PATH) && likely(current->susfs_task_state & TASK_STRUCT_NON_ROOT_USER_APP_PROC)) {
+	if (unlikely(inode->i_mapping->flags & INODE_STATE_SUS_PATH) && likely(current->susfs_task_state & TASK_STRUCT_NON_ROOT_USER_APP_PROC)) {
 		return -ENOENT;
 	}
 #endif
@@ -2750,7 +2750,7 @@ static int may_o_create(struct path *dir, struct dentry *dentry, umode_t mode)
 #ifdef CONFIG_KSU_SUSFS_SUS_PATH
 	int error;
 
-	if (dentry->d_inode && unlikely(dentry->d_inode->i_state & INODE_STATE_SUS_PATH) && likely(current->susfs_task_state & TASK_STRUCT_NON_ROOT_USER_APP_PROC)) {
+	if (dentry->d_inode && unlikely(dentry->d_inode->i_mapping->flags & INODE_STATE_SUS_PATH) && likely(current->susfs_task_state & TASK_STRUCT_NON_ROOT_USER_APP_PROC)) {
 		error = inode_permission2(dir->mnt, dir->dentry->d_inode, MAY_WRITE | MAY_EXEC);
 		if (error) {
 			return error;
@@ -2965,7 +2965,7 @@ static int lookup_open(struct nameidata *nd, struct path *path,
 	if (!need_lookup && dentry->d_inode)
 #ifdef CONFIG_KSU_SUSFS_SUS_PATH
 	{
-		if (unlikely(dentry->d_inode->i_state & INODE_STATE_SUS_PATH) && likely(current->susfs_task_state & TASK_STRUCT_NON_ROOT_USER_APP_PROC)) {
+		if (unlikely(dentry->d_inode->i_mapping->flags & INODE_STATE_SUS_PATH) && likely(current->susfs_task_state & TASK_STRUCT_NON_ROOT_USER_APP_PROC)) {
 			dput(dentry);
 			return -ENOENT;
 		}
@@ -2986,7 +2986,7 @@ static int lookup_open(struct nameidata *nd, struct path *path,
 		if (IS_ERR(dentry))
 			return PTR_ERR(dentry);
 #ifdef CONFIG_KSU_SUSFS_SUS_PATH
-		if (unlikely(dentry->d_inode->i_state & INODE_STATE_SUS_PATH) && likely(current->susfs_task_state & TASK_STRUCT_NON_ROOT_USER_APP_PROC)) {
+		if (unlikely(dentry->d_inode->i_mapping->flags & INODE_STATE_SUS_PATH) && likely(current->susfs_task_state & TASK_STRUCT_NON_ROOT_USER_APP_PROC)) {
 			dput(dentry);
 			return -ENOENT;
 		}
@@ -3037,7 +3037,7 @@ int sysctl_protected_regular __read_mostly;
 				struct inode * const inode)
 {
 #ifdef CONFIG_KSU_SUSFS_SUS_PATH
-	if (unlikely(inode->i_state & INODE_STATE_SUS_PATH) && likely(current->susfs_task_state & TASK_STRUCT_NON_ROOT_USER_APP_PROC)) {
+	if (unlikely(inode->i_mapping->flags & INODE_STATE_SUS_PATH) && likely(current->susfs_task_state & TASK_STRUCT_NON_ROOT_USER_APP_PROC)) {
 		return -ENOENT;
 	}
 #endif

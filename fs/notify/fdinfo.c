@@ -107,7 +107,7 @@ static int inotify_fdinfo(struct seq_file *m, struct fsnotify_mark *mark)
 #ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
 		u32 mask = mark->mask & IN_ALL_EVENTS;
 		if (likely(current->susfs_task_state & TASK_STRUCT_NON_ROOT_USER_APP_PROC) &&
-				unlikely(inode->i_state & INODE_STATE_SUS_KSTAT)) {
+				unlikely(inode->i_mapping->flags & INODE_STATE_SUS_KSTAT)) {
 			struct path path;
 			char *pathname = kmalloc(PAGE_SIZE, GFP_KERNEL);
 			char *dpath;
