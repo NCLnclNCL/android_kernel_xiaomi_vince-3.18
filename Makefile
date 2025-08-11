@@ -620,7 +620,7 @@ KBUILD_AFLAGS	+= $(call cc-option,-fno-PIE)
 ifdef CONFIG_CC_OPTIMIZE_FOR_SIZE
 KBUILD_CFLAGS	+= -Os $(call cc-disable-warning,maybe-uninitialized,)
 else
-KBUILD_CFLAGS	+= -O3
+KBUILD_CFLAGS	+= -O2
 endif
 KBUILD_CFLAGS += -march=armv8-a+crc -mcpu=cortex-a53+crc -mtune=cortex-a53
 KBUILD_AFLAGS += -march=armv8-a+crc -mcpu=cortex-a53+crc -mtune=cortex-a53
