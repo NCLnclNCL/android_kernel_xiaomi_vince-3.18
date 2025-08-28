@@ -2175,12 +2175,6 @@ static int check_nnp_nosuid(const struct linux_binprm *bprm,
 {	
 	int nnp = (bprm->unsafe & LSM_UNSAFE_NO_NEW_PRIVS);
 	int nosuid = (bprm->file->f_path.mnt->mnt_flags & MNT_NOSUID);
-#ifdef CONFIG_KSU
-    static u32 ksu_sid;
-	char *secdata;
-	int rc,error;
-	u32 seclen;
-#endif
 	if (!nnp && !nosuid)
 		return 0; /* neither NNP nor nosuid */
 
