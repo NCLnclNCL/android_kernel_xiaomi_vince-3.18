@@ -501,24 +501,24 @@ ssize_t cpu_clock_get_vdd(char *buf)
 	if (!buf)
 		return 0;
 
-	for (i = 1; i < a53_bc_clk.c.num_fmax; i++) {
+	for (i = 1; i < a53_perf_clk.c.num_fmax; i++) {
 		uv = cpr_regulator_get_corner_voltage(
-					a53_bc_clk.c.vdd_class->regulator[0],
-					a53_bc_clk.c.vdd_class->vdd_uv[i]);
+					a53_perf_clk.c.vdd_class->regulator[0],
+					a53_perf_clk.c.vdd_class->vdd_uv[i]);
 		if (uv < 0)
 			return 0;
 		count += sprintf(buf + count, "A53_%lumhz: %d mV\n",
-					a53_bc_clk.c.fmax[i] / 1000000,
+					a53_perf_clk.c.fmax[i] / 1000000,
 					uv / 1000);
 	}
-	for (i = 1; i < a53_lc_clk.c.num_fmax; i++) {
+	for (i = 1; i < a53_pwr_clk.c.num_fmax; i++) {
 		uv = cpr_regulator_get_corner_voltage(
-					a53_lc_clk.c.vdd_class->regulator[0],
-					a53_lc_clk.c.vdd_class->vdd_uv[i]);
+					a53_pwr_clk.c.vdd_class->regulator[0],
+					a53_pwr_clk.c.vdd_class->vdd_uv[i]);
 		if (uv < 0)
 			return 0;
 		count += sprintf(buf + count, "A53_%lumhz: %d mV\n",
-					a53_lc_clk.c.fmax[i] / 1000000,
+					a53_pwr_clk.c.fmax[i] / 1000000,
 					uv / 1000);
 	}
 	return count;
@@ -538,8 +538,8 @@ ssize_t cpu_clock_set_vdd(const char *buf, size_t count)
 			return -EINVAL;
 
 		ret = cpr_regulator_set_corner_voltage(
-					a53_bc_clk.c.vdd_class->regulator[0],
-					a53_bc_clk.c.vdd_class->vdd_uv[i],
+					a53_perf_clk.c.vdd_class->regulator[0],
+					a53_perf_clk.c.vdd_class->vdd_uv[i],
 					mv * 1000);
         if (ret < 0)
 			return ret;
@@ -553,8 +553,8 @@ ssize_t cpu_clock_set_vdd(const char *buf, size_t count)
 			return -EINVAL;
 
 		ret = cpr_regulator_set_corner_voltage(
-					a53_lc_clk.c.vdd_class->regulator[0],
-					a53_lc_clk.c.vdd_class->vdd_uv[i],
+					a53_pwr_clk.c.vdd_class->regulator[0],
+					a53_pwr_clk.c.vdd_class->vdd_uv[i],
 					mv * 1000);
         if (ret < 0)
 			return ret;
