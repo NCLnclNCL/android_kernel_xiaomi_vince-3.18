@@ -39,7 +39,7 @@
 
 #include "clock.h"
 
-#ifdef CONFIG_CPU_VOLTAGE_TABLE
+#ifdef CONFIG_VOLTAGE_CONTROL
 #include <linux/cpufreq.h>
 #include <linux/regulator/driver.h>
 #endif
@@ -487,7 +487,7 @@ static struct clk *logical_cpu_to_clk(int cpu)
 	return NULL;
 }
 
-#ifdef CONFIG_CPU_VOLTAGE_TABLE
+#ifdef CONFIG_VOLTAGE_CONTROL
 extern int cpr_regulator_get_corner_voltage(struct regulator *regulator,
 		int corner);
 extern int cpr_regulator_set_corner_voltage(struct regulator *regulator,
