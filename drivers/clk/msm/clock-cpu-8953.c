@@ -532,7 +532,7 @@ ssize_t cpu_clock_set_vdd(const char *buf, size_t count)
 	if (!buf)
 		return -EINVAL;
 
-	for (i = 1; i < a53_bc_clk.c.num_fmax; i++) {
+	for (i = 1; i < a53_perf_clk.c.num_fmax; i++) {
 		ret = sscanf(buf, "%d", &mv);
 		if (ret != 1)
 			return -EINVAL;
@@ -547,7 +547,7 @@ ssize_t cpu_clock_set_vdd(const char *buf, size_t count)
         ret = sscanf(buf, "%s", line);
 		buf += strlen(line) + 1;
 	}
-	for (i = 1; i < a53_lc_clk.c.num_fmax; i++) {
+	for (i = 1; i < a53_pwr_clk.c.num_fmax; i++) {
 		ret = sscanf(buf, "%d", &mv);
 		if (ret != 1)
 			return -EINVAL;
