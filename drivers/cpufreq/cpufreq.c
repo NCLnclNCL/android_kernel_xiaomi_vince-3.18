@@ -32,7 +32,7 @@
 #include <linux/sched.h>
 #endif
 #include <trace/events/power.h>
-
+#include <linux/pm_opp.h>
 /**
  * The "cpufreq driver" - the arch- or hardware-dependent low
  * level driver of CPUFreq support, and its spinlock. This lock
