@@ -1618,8 +1618,6 @@ static struct regulator_ops cpr_corner_ops = {
 	.list_corner_voltage	= cpr_regulator_list_corner_voltage,
 };
 
-
-
 #ifdef CONFIG_PM
 static int cpr_suspend(struct cpr_regulator *cpr_vreg)
 {
