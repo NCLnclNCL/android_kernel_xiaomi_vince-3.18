@@ -32,7 +32,7 @@
 #include <linux/sched.h>
 #endif
 #include <trace/events/power.h>
-#include <linux/pm_opp.h>
+
 /**
  * The "cpufreq driver" - the arch- or hardware-dependent low
  * level driver of CPUFreq support, and its spinlock. This lock
@@ -824,18 +824,15 @@ static ssize_t show_bios_limit(struct cpufreq_policy *policy, char *buf)
 
 
 #ifdef CONFIG_VOLTAGE_CONTROL
-extern ssize_t cpu_clock_get_vdd(char *buf);
-extern ssize_t cpu_clock_set_vdd(const char *buf, size_t count);
-
+extern ssize_t get_Voltages(char *buf);
 static ssize_t show_UV_mV_table(struct cpufreq_policy *policy, char *buf)
 {
-	return cpu_clock_get_vdd(buf);
+	return get_Voltages(buf);
 }
-
-static ssize_t store_UV_mV_table(struct cpufreq_policy *policy,
-	const char *buf, size_t count)
+extern ssize_t set_Voltages(const char *buf, size_t count);
+static ssize_t store_UV_mV_table(struct cpufreq_policy *policy, const char *buf, size_t count)
 {
-	return cpu_clock_set_vdd(buf, count);
+	return set_Voltages(buf, count);
 }
 #endif
 
