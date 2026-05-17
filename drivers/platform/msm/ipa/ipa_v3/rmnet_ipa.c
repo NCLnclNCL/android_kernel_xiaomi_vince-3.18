@@ -2686,7 +2686,8 @@ int rmnet_ipa3_poll_tethering_stats(struct wan_ioctl_poll_tethering_stats *data)
 		return 0;
 	}
 
-	schedule_delayed_work(&ipa_tether_stats_poll_wakequeue_work, 0);
+	queue_delayed_work(system_power_efficient_wq, 
+						&ipa_tether_stats_poll_wakequeue_work, 0);
 	return 0;
 }
 
