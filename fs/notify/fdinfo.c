@@ -22,15 +22,8 @@
 #if defined(CONFIG_PROC_FS)
 
 #if defined(CONFIG_INOTIFY_USER) || defined(CONFIG_FANOTIFY)
-#ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
-static int show_fdinfo(struct seq_file *m, struct file *f,
-			int (*show)(struct seq_file *m,
-				     struct fsnotify_mark *mark,
-					 struct file *file))
-#else
 static int show_fdinfo(struct seq_file *m, struct file *f,
 		       int (*show)(struct seq_file *m, struct fsnotify_mark *mark))
-#endif
 {
 	struct fsnotify_group *group = f->private_data;
 	struct fsnotify_mark *mark;
@@ -39,11 +32,7 @@ static int show_fdinfo(struct seq_file *m, struct file *f,
 	mutex_lock(&group->mark_mutex);
 	list_for_each_entry(mark, &group->marks_list, g_list) {
 		//ret = show(m, mark);
-#ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
-		ret = show(m, mark, f);
-#else
  		ret = show(m, mark);
-#endif
 		if (ret)
 			break;
 	}
@@ -88,11 +77,7 @@ static int show_mark_fhandle(struct seq_file *m, struct inode *inode)
 #endif
 
 #ifdef CONFIG_INOTIFY_USER
-#ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
-static int inotify_fdinfo(struct seq_file *m, struct fsnotify_mark *mark, struct file *file)
-#else
 static int inotify_fdinfo(struct seq_file *m, struct fsnotify_mark *mark)
-#endif
 {
 	struct inotify_inode_mark *inode_mark;
 	struct inode *inode;
@@ -104,37 +89,7 @@ static int inotify_fdinfo(struct seq_file *m, struct fsnotify_mark *mark)
 	inode_mark = container_of(mark, struct inotify_inode_mark, fsn_mark);
 	inode = igrab(mark->i.inode);
 	if (inode) {
-#ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
 		u32 mask = mark->mask & IN_ALL_EVENTS;
-		if (likely(current->susfs_task_state & TASK_STRUCT_NON_ROOT_USER_APP_PROC) &&
-				unlikely(inode->i_mapping->flags & INODE_STATE_SUS_KSTAT)) {
-			struct path path;
-			char *pathname = kmalloc(PAGE_SIZE, GFP_KERNEL);
-			char *dpath;
-			if (!pathname) {
-				goto out_seq_printf;
-			}
-			dpath = d_path(&file->f_path, pathname, PAGE_SIZE);
-			if (!dpath) {
-				goto out_free_pathname;
-			}
-			if (kern_path(dpath, 0, &path)) {
-				goto out_free_pathname;
-			}
-			seq_printf(m, "inotify wd:%x ino:%lx sdev:%x mask:%x ignored_mask:%x ",
-			   inode_mark->wd, path.dentry->d_inode->i_ino, path.dentry->d_inode->i_sb->s_dev,
-			   mask, mark->ignored_mask);
-			show_mark_fhandle(m, path.dentry->d_inode);
-			seq_putc(m, '\n');
-			iput(inode);
-			path_put(&path);
-			kfree(pathname);
-			return;
-out_free_pathname:
-			kfree(pathname);
-		}
-out_seq_printf:
-#endif
 		ret = seq_printf(m, "inotify wd:%x ino:%lx sdev:%x "
 				 "mask:%x ignored_mask:%x ",
 				 inode_mark->wd, inode->i_ino,

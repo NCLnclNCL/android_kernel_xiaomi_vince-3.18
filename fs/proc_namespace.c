@@ -102,10 +102,6 @@ static int show_vfsmnt(struct seq_file *m, struct vfsmount *mnt)
 	struct path mnt_path = { .dentry = mnt->mnt_root, .mnt = mnt };
 	struct super_block *sb = mnt_path.dentry->d_sb;
 
-#ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
-	if (unlikely((r->mnt_id >= DEFAULT_SUS_MNT_ID) && !susfs_is_current_ksu_domain()))
-		return 0;
-#endif
 
 	if (sb->s_op->show_devname) {
 		err = sb->s_op->show_devname(m, mnt_path.dentry);
@@ -207,10 +203,6 @@ static int show_vfsstat(struct seq_file *m, struct vfsmount *mnt)
 	struct super_block *sb = mnt_path.dentry->d_sb;
 	int err = 0;
 
-#ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
-	if (unlikely((r->mnt_id >= DEFAULT_SUS_MNT_ID) && !susfs_is_current_ksu_domain()))
-		return 0;
-#endif
 
 	/* device */
 	if (sb->s_op->show_devname) {
